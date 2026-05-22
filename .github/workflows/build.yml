@@ -1,4 +1,4 @@
-name: ESP32 NAT Router / WiFi Repeater Build
+name: ESP32 WiFi Repeater Build
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       # ----------------------------
       # 2. System dependencies
@@ -46,29 +47,29 @@ jobs:
           ./install.sh esp32
 
       # ----------------------------
-      # 5. Build project (CRITICAL FIX HERE)
+      # 5. Build firmware (FIXED ROOT BUILD)
       # ----------------------------
       - name: Build firmware
         shell: bash
         run: |
           set -e
 
-          cd $GITHUB_WORKSPACE
-
-          # IMPORTANT: ensure correct branch context
           echo "Current branch:"
           git branch --show-current || true
 
-          # Load ESP-IDF environment (THIS WAS MISSING IN YOUR WORKFLOW)
+          # Load ESP-IDF environment
           source $IDF_PATH/export.sh
 
-          # Verify IDF version (fail early if wrong)
-          echo "IDF version check:"
+          # Verify IDF
           idf.py --version
 
-          # Ensure correct target
-          cd router
+          # IMPORTANT: ROOT build (NOT router/)
+          cd $GITHUB_WORKSPACE
 
+          # Ensure dependencies resolved properly
+          idf.py install
+
+          # Set target
           idf.py set-target esp32
 
           # Build
