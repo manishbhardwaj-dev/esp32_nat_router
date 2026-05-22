@@ -1,56 +1,75 @@
-name: Build ESP32 NAT Router
+name: ESP32 NAT Router / WiFi Repeater Build
 
 on:
   push:
-    branches:
-      - esp32_wifi_repeater
   pull_request:
-    branches:
-      - esp32_wifi_repeater
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      IDF_PATH: ${{ github.workspace }}/esp-idf
+
     steps:
+      # ----------------------------
+      # 1. Checkout (FULL repo + submodules)
+      # ----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: v5.1.4
-          target: esp32
-
-      - name: Export ESP-IDF environment
-        shell: bash
+      # ----------------------------
+      # 2. System dependencies
+      # ----------------------------
+      - name: Install dependencies
         run: |
-          . $IDF_PATH/export.sh
-          idf.py --version
+          sudo apt-get update
+          sudo apt-get install -y \
+            git wget curl flex bison gperf python3 python3-pip \
+            cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 
-      - name: Clean previous build
-        shell: bash
+      # ----------------------------
+      # 3. Clone ESP-IDF (PINNED VERSION)
+      # ----------------------------
+      - name: Clone ESP-IDF v5.5
         run: |
-          . $IDF_PATH/export.sh
-          rm -rf build
-          idf.py fullclean || true
+          git clone -b v5.5 --recursive https://github.com/espressif/esp-idf.git $IDF_PATH
 
+      # ----------------------------
+      # 4. Install ESP-IDF tools
+      # ----------------------------
+      - name: Install ESP-IDF tools
+        run: |
+          cd $IDF_PATH
+          ./install.sh esp32
+
+      # ----------------------------
+      # 5. Build project (CRITICAL FIX HERE)
+      # ----------------------------
       - name: Build firmware
         shell: bash
         run: |
-          . $IDF_PATH/export.sh
+          set -e
+
+          cd $GITHUB_WORKSPACE
+
+          # IMPORTANT: ensure correct branch context
+          echo "Current branch:"
+          git branch --show-current || true
+
+          # Load ESP-IDF environment (THIS WAS MISSING IN YOUR WORKFLOW)
+          source $IDF_PATH/export.sh
+
+          # Verify IDF version (fail early if wrong)
+          echo "IDF version check:"
+          idf.py --version
+
+          # Ensure correct target
+          cd router
 
           idf.py set-target esp32
-          idf.py build
 
-      - name: Upload firmware artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: esp32_nat_router_firmware
-          path: |
-            build/*.bin
-            build/*.elf
-            build/*.map
+          # Build
+          idf.py build
