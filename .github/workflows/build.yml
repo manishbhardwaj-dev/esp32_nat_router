@@ -1,16 +1,71 @@
-- name: Build firmware (NO INSTALL STEP)
-  shell: bash
-  run: |
-    set -e
+name: ESP32 WiFi Repeater Build
 
-    echo "Sourcing ESP-IDF..."
-    source $IDF_PATH/export.sh
+on:
+  push:
+  pull_request:
 
-    echo "Cleaning build (safe CI)"
-    rm -rf build
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    echo "Setting target"
-    idf.py set-target esp32
+    env:
+      IDF_PATH: ${{ github.workspace }}/esp-idf
 
-    echo "Building firmware"
-    idf.py build
+    steps:
+      # ----------------------------
+      # 1. Checkout (FULL repo + submodules)
+      # ----------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # ----------------------------
+      # 2. System dependencies
+      # ----------------------------
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git wget curl flex bison gperf python3 python3-pip \
+            cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+
+      # ----------------------------
+      # 3. Clone ESP-IDF (v5.5 as per README)
+      # ----------------------------
+      - name: Clone ESP-IDF
+        run: |
+          git clone -b v5.5 --recursive https://github.com/espressif/esp-idf.git $IDF_PATH
+
+      # ----------------------------
+      # 4. Install ESP-IDF tools (SAFE: NO project install)
+      # ----------------------------
+      - name: Install ESP-IDF tools
+        run: |
+          cd $IDF_PATH
+          ./install.sh esp32
+
+      # ----------------------------
+      # 5. Build firmware (ROOT ONLY, NO install step)
+      # ----------------------------
+      - name: Build firmware
+        shell: bash
+        run: |
+          set -e
+
+          echo "Sourcing ESP-IDF..."
+          source $IDF_PATH/export.sh
+
+          echo "Repo root:"
+          pwd
+          ls -la
+
+          echo "Setting target (ESP32)"
+          idf.py set-target esp32
+
+          echo "Cleaning previous build (safe CI)"
+          rm -rf build
+
+          echo "Building firmware"
+          idf.py build
