@@ -69,3 +69,15 @@ jobs:
 
           echo "Building firmware"
           idf.py build
+
+      # ----------------------------
+      # 6. Upload firmware artifacts
+      # ----------------------------
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-firmware
+          path: |
+            build/*.bin
+            build/bootloader/*.bin
+            build/partition_table/*.bin
