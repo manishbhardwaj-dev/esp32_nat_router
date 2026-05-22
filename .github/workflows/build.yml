@@ -1,76 +1,16 @@
-name: ESP32 WiFi Repeater Build
+- name: Build firmware (NO INSTALL STEP)
+  shell: bash
+  run: |
+    set -e
 
-on:
-  push:
-  pull_request:
+    echo "Sourcing ESP-IDF..."
+    source $IDF_PATH/export.sh
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    echo "Cleaning build (safe CI)"
+    rm -rf build
 
-    env:
-      IDF_PATH: ${{ github.workspace }}/esp-idf
+    echo "Setting target"
+    idf.py set-target esp32
 
-    steps:
-      # ----------------------------
-      # 1. Checkout (FULL repo + submodules)
-      # ----------------------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      # ----------------------------
-      # 2. System dependencies
-      # ----------------------------
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git wget curl flex bison gperf python3 python3-pip \
-            cmake ninja-build ccache libffi-dev libssl-dev dfu-util
-
-      # ----------------------------
-      # 3. Clone ESP-IDF (PINNED VERSION)
-      # ----------------------------
-      - name: Clone ESP-IDF v5.5
-        run: |
-          git clone -b v5.5 --recursive https://github.com/espressif/esp-idf.git $IDF_PATH
-
-      # ----------------------------
-      # 4. Install ESP-IDF tools
-      # ----------------------------
-      - name: Install ESP-IDF tools
-        run: |
-          cd $IDF_PATH
-          ./install.sh esp32
-
-      # ----------------------------
-      # 5. Build firmware (FIXED ROOT BUILD)
-      # ----------------------------
-      - name: Build firmware
-        shell: bash
-        run: |
-          set -e
-
-          echo "Current branch:"
-          git branch --show-current || true
-
-          # Load ESP-IDF environment
-          source $IDF_PATH/export.sh
-
-          # Verify IDF
-          idf.py --version
-
-          # IMPORTANT: ROOT build (NOT router/)
-          cd $GITHUB_WORKSPACE
-
-          # Ensure dependencies resolved properly
-          idf.py install
-
-          # Set target
-          idf.py set-target esp32
-
-          # Build
-          idf.py build
+    echo "Building firmware"
+    idf.py build
