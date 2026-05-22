@@ -57,6 +57,9 @@ jobs:
           echo "Sourcing ESP-IDF..."
           source $IDF_PATH/export.sh
 
+          echo "Forcing sdkconfig defaults (MSS fix included)"
+          export SDKCONFIG_DEFAULTS=sdkconfig.defaults
+
           echo "Repo root:"
           pwd
           ls -la
