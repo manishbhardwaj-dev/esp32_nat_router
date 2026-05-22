@@ -1,0 +1,43 @@
+name: Build ESP32 NAT Router
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: espressif/idf:v4.4.7
+
+    steps:
+      - name: Checkout workflow repo
+        uses: actions/checkout@v4
+
+      - name: Clone ESP32 WiFi Repeater branch
+        run: |
+          git clone --branch esp32_wifi_repeater --single-branch \
+            https://github.com/martin-ger/esp32_nat_router.git router
+
+      - name: Set ESP32 target
+        run: |
+          cd router
+          idf.py set-target esp32
+
+      - name: Build firmware
+        run: |
+          cd router
+          idf.py build
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32_nat_router_firmware
+          path: |
+            router/build/*.bin
+            router/build/*.elf
+            router/build/*.map
