@@ -83,7 +83,7 @@ uint8_t sta_ttl_override = 0;
 uint16_t reconnect_watchdog_s = 0;
 
 // MSS clamp for AP interface (0 = disabled, otherwise max MSS in bytes)
-uint16_t ap_mss_clamp = 0;
+uint16_t ap_mss_clamp = 1360;
 
 // Path MTU for AP clients: send ICMP Fragmentation Needed when a DF-flagged packet
 // from a client exceeds this size (0 = disabled).
